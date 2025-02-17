@@ -6,4 +6,4 @@ class Driver(Base, BaseModel):
     __tablename__ = "driver"
     driver_id = Column(Integer, primary_key=True, autoincrement=True)
     driver_name = Column(String(100))
-    # transactions = relationship("FuelTransaction", back_populates="driver")
+    transactions = relationship("FuelTransaction", back_populates="driver")

@@ -16,7 +16,7 @@ class OCRController:
         _, self.SessionLocal = DBOps().get_db()
 
 
-    def extract_and_save_fuel_transaction(self, image_path: str) -> FuelTransactionBase:
+    def extract_and_save_fuel_transaction(self, image_path: str, image_info: dict) -> FuelTransactionBase:
         """Extract text from image and save fuel transaction"""
         try:
             prompt = (
@@ -29,7 +29,7 @@ class OCRController:
                 self.model, 
                 FuelTransactionBase
             )
-            self.db_ops.save_fuel_transaction(result)
+            self.db_ops.save_fuel_transaction(result, image_info["user_full_name"])
             return result
         except Exception as e:
             raise Exception(f"OCR processing failed: {str(e)}")

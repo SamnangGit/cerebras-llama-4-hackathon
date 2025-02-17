@@ -7,7 +7,7 @@ from models.fuel_transaction import FuelTransaction
 from models.product import Product
 from models.station import Station
 from models.vehicle import Vehicle
-
+from models.driver import Driver
 
 
 class DBOps:
@@ -108,9 +108,10 @@ class DBOps:
         db.flush()
         return instance
 
-    def save_fuel_transaction(self, fuel_transaction):
+    def save_fuel_transaction(self, fuel_transaction, driver_name):
         """Save fuel transaction with related records to the database"""
         engine, SessionLocal = self.get_db()
+        print(driver_name)
         
         with SessionLocal() as db:
             try:
@@ -130,12 +131,18 @@ class DBOps:
                     Vehicle,
                     plate_number=fuel_transaction.plate_number
                 )
+                driver = self.get_or_create_record(
+                    db,
+                    Driver,
+                    driver_name=driver_name
+                )
                 
                 # Create fuel transaction with the obtained IDs
                 fuel_transaction_model = FuelTransaction(
                     product_id=product.product_id,
                     station_id=station.station_id,
                     vehicle_id=vehicle.vehicle_id,
+                    driver_id=driver.driver_id,
                     transaction_date=fuel_transaction.transaction_date,
                     quantity=fuel_transaction.quantity,
                     unit_price=fuel_transaction.unit_price,

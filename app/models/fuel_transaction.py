@@ -8,7 +8,7 @@ class FuelTransaction(Base, BaseModel):
     transaction_id = Column(Integer, primary_key=True, autoincrement=True)
     station_id = Column(Integer, ForeignKey("station.station_id"))
     vehicle_id = Column(Integer, ForeignKey("vehicle.vehicle_id"))
-    # driver_id = Column(Integer, ForeignKey("driver.driver_id"))
+    driver_id = Column(Integer, ForeignKey("driver.driver_id"))
     product_id = Column(Integer, ForeignKey("product.product_id"))
     transaction_date = Column(String, nullable=False, index=True)
     quantity = Column(Numeric(10, 2), nullable=False)
@@ -20,5 +20,5 @@ class FuelTransaction(Base, BaseModel):
 
     station = relationship("Station", back_populates="transactions")
     vehicle = relationship("Vehicle", back_populates="transactions")
-    # driver = relationship("Driver", back_populates="transactions")
+    driver = relationship("Driver", back_populates="transactions")
     product = relationship("Product", back_populates="transactions")

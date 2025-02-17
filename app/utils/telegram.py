@@ -30,12 +30,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_full_name = f"{user.first_name} {user.last_name if user.last_name else ''}"
     username = user.username if user.username else "No username"
 
+    image_info = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "username": username,
+        "user_full_name": user_full_name,
+        "user_id": user.id
+    }
+
     try:
         photo_file = await photo.get_file()
         file_name = f"{chat_id}_{message_id}_{username}.jpg"
         file_path = os.path.join(SAVE_DIR, file_name)
         await photo_file.download_to_drive(file_path)
-        ocr_controller.extract_and_save_fuel_transaction(file_path)
+        result = ocr_controller.extract_and_save_fuel_transaction(file_path, image_info)
         log_entry = (
             f"Image Details:\n"
             f"- Saved as: {file_name}\n"
@@ -51,7 +59,17 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(
             f"✅ Image saved successfully!\n"
-            f"📤 Uploaded by: {user_full_name} (@{username})"
+            f"📤 Uploaded by: {user_full_name} (@{username})\n"
+            f"💰 Fuel Transaction: {result.total_amount} USD\n"
+            f"🚗 Vehicle: {result.plate_number}\n"
+            f"🏭 Station: {result.station_name}\n"
+            f"💸 Product: {result.product_name}\n"
+            f"🕒 Date: {result.transaction_date}\n"
+            f"💸 Total Amount: {result.total_amount} USD\n"
+            f"💸 Quantity: {result.quantity} L\n"
+            f"💸 Unit Price: {result.unit_price} USD/L\n"
+            f"💸 Previous KM: {result.previous_km}\n"
+            f"💸 Actual KM: {result.actual_km}\n"
         )
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to save image: {str(e)}")
