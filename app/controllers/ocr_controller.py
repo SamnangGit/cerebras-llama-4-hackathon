@@ -1,88 +1,54 @@
 from agents.model import GenerativeModel
 from agents.schemas.fuel_transaction import FuelTransactionBase
-from models.fuel_transaction import FuelTransaction
-from models.product import Product
-from models.station import Station
-from models.vehicle import Vehicle
-from models.init_db import get_db
-from sqlalchemy.orm import Session
+from utils.db_ops import DBOps
+from agents.sql_agent import SQLAgent
+from agents.tools.file_ops import FileOps
+import os
 
 class OCRController:
     def __init__(self, model_name: str = "gemini-2.0-flash"):
         """Initialize OCR controller with specified model."""
-        self.model = GenerativeModel(model_name=model_name)
-        _, self.SessionLocal = get_db()
+        generative_model = GenerativeModel()
+        self.model = generative_model.get_model(model_name)
+        self.db_ops = DBOps()
+        self.sql_agent = SQLAgent()
+        self.file_ops = FileOps()
+        _, self.SessionLocal = DBOps().get_db()
 
-    def ocr_structured_output(self, image_path: str) -> FuelTransactionBase:
+
+    def extract_and_save_fuel_transaction(self, image_path: str) -> FuelTransactionBase:
+        """Extract text from image and save fuel transaction"""
         try:
             prompt = (
                 "Extract all visible text from this image. "
                 "Return only the extracted text, maintaining its original formatting."
             )
-            
-            result = self.model.generate_text(prompt, image_path)
-            self.save_to_database(result)
+            result = self.sql_agent.generate_struture_output_from_image(
+                prompt, 
+                image_path, 
+                self.model, 
+                FuelTransactionBase
+            )
+            self.db_ops.save_fuel_transaction(result)
             return result
-            
         except Exception as e:
             raise Exception(f"OCR processing failed: {str(e)}")
-        
 
+    def retrive_and_generate_html_file(self, sql_prompt: str, html_prompt: str) -> str:
+        """Generate HTML file based on SQL query results"""
+        try:
+            schema = self.db_ops.get_schema_info()
+            
+            sql_query = self.sql_agent.generate_sql_query(schema, sql_prompt, self.model)
 
-    def get_or_create_record(self, db: Session, model, **kwargs):
-        """Helper method to get existing record or create new one"""
-        instance = db.query(model).filter_by(**kwargs).first()
-        if instance:
-            return instance
-        
-        instance = model(**kwargs)
-        db.add(instance)
-        db.flush()
-        return instance
-
-    def save_to_database(self, fuel_transaction: FuelTransactionBase):
-        with self.SessionLocal() as db:
-            try:
-                # Get or create related records using helper method
-                product = self.get_or_create_record(
-                    db,
-                    Product,
-                    product_name=fuel_transaction.product_name
-                )
-                
-                station = self.get_or_create_record(
-                    db,
-                    Station,
-                    station_name=fuel_transaction.station_name
-                )
-                
-                vehicle = self.get_or_create_record(
-                    db,
-                    Vehicle,
-                    plate_number=fuel_transaction.plate_number
-                )
-                
-                # Create fuel transaction with the obtained IDs
-                fuel_transaction_model = FuelTransaction(
-                    product_id=product.product_id,
-                    station_id=station.station_id,
-                    vehicle_id=vehicle.vehicle_id,
-                    transaction_date=fuel_transaction.transaction_date,
-                    quantity=fuel_transaction.quantity,
-                    unit_price=fuel_transaction.unit_price,
-                    total_amount=fuel_transaction.total_amount,
-                    previous_km=fuel_transaction.previous_km,
-                    actual_km=fuel_transaction.actual_km,
-                    consumption_rate=fuel_transaction.consumption_rate,
-                )
-                
-                db.add(fuel_transaction_model)
-                db.commit()
-                db.refresh(fuel_transaction_model)
-                
-                return fuel_transaction_model
-                
-            except Exception as e:
-                db.rollback()
-                raise Exception(f"Failed to save transaction: {str(e)}")
-
+            result = self.db_ops.execute_sql_query(sql_query.query)
+            
+            html_file = self.sql_agent.generate_html_text(html_prompt, result, self.model)
+            
+            file_name = self.file_ops.date_time_now() + "_" + html_file.file_name
+            file_path = os.path.join(os.path.dirname(__file__), "..", "public", "reports", file_name)
+            self.file_ops.save_html_to_file(html_file.html, file_path)
+            
+            return "HTML file generated successfully"
+        except Exception as e:
+            raise Exception(f"Error generating HTML file: {str(e)}")

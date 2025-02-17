@@ -35,4 +35,5 @@ archive.zip
 
 
 # app
-app/uploads/*
+app/public/uploads/*
+app/public/reports/*
