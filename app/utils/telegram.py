@@ -12,8 +12,13 @@ ocr_controller = OCRController()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 PHOTO_AUTHORIZED_CHATS = [-1002301798755]  # Group for photo processing
 TEXT_AUTHORIZED_CHATS = [-1002306963635]   # Replace with your text group ID
-SAVE_DIR = "public/uploads"
-os.makedirs(SAVE_DIR, exist_ok=True)
+FILE_AUTHORIZED_CHATS = [1924007655]
+IMG_DIR = "public/uploads/images"
+LOG_DIR = "public/uploads/logs"
+PROMPT_DIR = "public/uploads/prompts"
+os.makedirs(IMG_DIR, exist_ok=True)
+os.makedirs(LOG_DIR, exist_ok=True)
+os.makedirs(PROMPT_DIR, exist_ok=True)
 
 # Store the bot application globally
 telegram_app = None
@@ -42,7 +47,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         photo_file = await photo.get_file()
         file_name = f"{chat_id}_{message_id}_{username}.jpg"
-        file_path = os.path.join(SAVE_DIR, file_name)
+        file_path = os.path.join(IMG_DIR, file_name)
         await photo_file.download_to_drive(file_path)
         result = ocr_controller.extract_and_save_fuel_transaction(file_path, image_info)
         log_entry = (
@@ -54,7 +59,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"- Chat ID: {chat_id}"
         )
 
-        log_file_path = os.path.join(SAVE_DIR, "image_logs.txt")
+        log_file_path = os.path.join(LOG_DIR, "image_logs.txt")
         with open(log_file_path, "a", encoding="utf-8") as log_file:
             log_file.write(f"\n{log_entry}\n{'='*50}")
 
@@ -114,29 +119,68 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"- Chat ID: {chat_id}"
         )
 
-        log_file_path = os.path.join(SAVE_DIR, "text_logs.txt")
+        log_file_path = os.path.join(LOG_DIR, "text_logs.txt")
         with open(log_file_path, "a", encoding="utf-8") as log_file:
             log_file.write(f"\n{log_entry}\n{'='*50}")
 
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to process message: {str(e)}")
 
+async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle incoming files in the file chat"""
+    try:
+        print(f"Received file from chat ID: {update.effective_chat.id}")
+        chat_id = update.effective_chat.id
+        
+        # Check if chat is in authorized list (convert both to string for comparison)
+        if str(chat_id) not in [str(id) for id in FILE_AUTHORIZED_CHATS]:
+            print(f"Unauthorized file message from chat ID: {chat_id}")
+            await update.message.reply_text("This chat is not authorized for file uploads.")
+            return
+            
+        file = update.message.document
+        file_id = file.file_id
+        file_name = file.file_name
+        file_path = os.path.join(PROMPT_DIR, file_name)
+        
+        # Get file - this is an awaitable coroutine
+        file_obj = await file.get_file()
+        await file_obj.download_to_drive(file_path)
+        
+        await update.message.reply_text(f"File saved successfully: {file_name}")
+    except Exception as e:
+        print(f"Error in handle_file: {str(e)}")
+        try:
+            await update.message.reply_text(f"❌ Failed to save file: {str(e)}")
+        except Exception as reply_error:
+            print(f"Failed to send error message: {str(reply_error)}")
+
+
+
+
 async def send_html_file(file_path: str, explanation: str):
     try:
         bot = Bot(token=TOKEN)
         chat_id = PHOTO_AUTHORIZED_CHATS[0]
-        # Send the HTML file
+        # Send the HTML file with increased timeout (e.g., 60 seconds)
         with open(file_path, "rb") as html_file:
             await bot.send_document(
                 chat_id=chat_id,
                 document=html_file,
-                filename=os.path.basename(file_path)
+                filename=os.path.basename(file_path),
+                read_timeout=60,  # Increase timeout to 60 seconds
+                write_timeout=60,  # Increase timeout to 60 seconds
+                connect_timeout=60,  # Increase timeout to 60 seconds
+                pool_timeout=60  # Increase timeout to 60 seconds
             )
-        
-        # Send the explanation
+        # Send the explanation with increased timeout
         await bot.send_message(
             chat_id=chat_id,
-            text=explanation
+            text=explanation,
+            read_timeout=30,  # Increase timeout to 30 seconds
+            write_timeout=30,  # Increase timeout to 30 seconds
+            connect_timeout=30,  # Increase timeout to 30 seconds
+            pool_timeout=30  # Increase timeout to 30 seconds
         )
     except Exception as e:
         print(f"Error sending file to Telegram: {str(e)}")
@@ -167,9 +211,14 @@ async def init_telegram_bot():
     text_filter = filters.TEXT & ~filters.COMMAND & filters.Chat(chat_id=TEXT_AUTHORIZED_CHATS)
     telegram_app.add_handler(MessageHandler(text_filter, handle_text))
     
+    # Add file handler for file chat
+    file_filter = filters.Document.ALL & filters.Chat(chat_id=FILE_AUTHORIZED_CHATS)
+    telegram_app.add_handler(MessageHandler(file_filter, handle_file))
+    
     print(f"Starting Telegram bot...")
     print(f"Monitoring photo messages in these chats: {PHOTO_AUTHORIZED_CHATS}")
     print(f"Monitoring text messages in these chats: {TEXT_AUTHORIZED_CHATS}")
+    print(f"Monitoring file messages in these chats: {FILE_AUTHORIZED_CHATS}")
     return telegram_app
 
 async def stop_telegram_bot():
@@ -190,5 +239,6 @@ def get_bot_status():
     return {
         "bot_running": telegram_app is not None and telegram_app.is_running,
         "photo_monitored_chats": PHOTO_AUTHORIZED_CHATS,
-        "text_monitored_chats": TEXT_AUTHORIZED_CHATS
+        "text_monitored_chats": TEXT_AUTHORIZED_CHATS,
+        "file_monitored_chats": FILE_AUTHORIZED_CHATS
     }

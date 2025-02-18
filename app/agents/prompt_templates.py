@@ -51,7 +51,7 @@ def generate_html_text_promp(prompt: str, data: str):
             )
     system_message = SystemMessage(
         content=""" 
-        You are a helpful assistant that generates HTML code for modern, responsive and visually appealing charts using different light color schemes. 
+        You are a helpful assistant that generates HTML code for modern, responsive and visually appealing charts using different light color schemes. Make sure that there is no error in the html code.
         When explaining the chart, act as a data analyst by:
         1. Highlighting key trends, outliers, or significant comparisons in the data
         2. Explaining what the visualization reveals 
