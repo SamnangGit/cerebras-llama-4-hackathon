@@ -8,6 +8,7 @@ from models.product import Product
 from models.station import Station
 from models.vehicle import Vehicle
 from models.driver import Driver
+from datetime import datetime
 
 
 class DBOps:
@@ -77,17 +78,20 @@ class DBOps:
         """
         Execute a raw SQL query and return the result as a list of dictionaries
         """
-        engine, _ = self.init_db()
-        with engine.connect() as connection:
-            result = connection.execute(text(sql_query))
-            column_names = result.keys()
-            data = result.fetchall()
-            
-            result_list = []
-            for row in data:
-                result_list.append(dict(zip(column_names, row)))
-        
-        return result_list
+        try:
+            engine, _ = self.init_db()
+            with engine.connect() as connection:
+                print(sql_query)
+                result = connection.execute(text(sql_query))
+                column_names = result.keys()
+                data = result.fetchall()
+                
+                result_list = []
+                for row in data:
+                    result_list.append(dict(zip(column_names, row)))
+            return result_list
+        except Exception as e:
+            raise Exception(f"Error executing SQL query: {str(e)}")
     
     def verify_tables(self):
         """
@@ -100,13 +104,16 @@ class DBOps:
     
     def get_or_create_record(self, db, model, **kwargs):
         """Helper method to get existing record or create new one"""
-        instance = db.query(model).filter_by(**kwargs).first()
-        if instance:
+        try:
+            instance = db.query(model).filter_by(**kwargs).first()
+            if instance:
+                return instance
+            instance = model(**kwargs)
+            db.add(instance)
+            db.flush()
             return instance
-        instance = model(**kwargs)
-        db.add(instance)
-        db.flush()
-        return instance
+        except Exception as e:
+            raise Exception(f"Error getting or creating record: {str(e)}")
 
     def save_fuel_transaction(self, fuel_transaction, driver_name):
         """Save fuel transaction with related records to the database"""
@@ -143,7 +150,7 @@ class DBOps:
                     station_id=station.station_id,
                     vehicle_id=vehicle.vehicle_id,
                     driver_id=driver.driver_id,
-                    transaction_date=fuel_transaction.transaction_date,
+                    transaction_date=self.convert_date_string(fuel_transaction.transaction_date),
                     quantity=fuel_transaction.quantity,
                     unit_price=fuel_transaction.unit_price,
                     total_amount=fuel_transaction.total_amount,
@@ -160,3 +167,11 @@ class DBOps:
             except Exception as e:
                 db.rollback()
                 raise Exception(f"Failed to save transaction: {str(e)}")
+            
+
+    def convert_date_string(self, date_str: str) -> datetime:
+        try:
+            parsed_date = datetime.strptime(date_str, '%d/%m/%Y %H:%M')
+            return parsed_date.replace(microsecond=419502)
+        except ValueError as e:
+            raise ValueError(f"Invalid date string format. Expected DD/MM/YYYY HH:mm, got: {date_str}") from e

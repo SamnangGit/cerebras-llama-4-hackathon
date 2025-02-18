@@ -10,7 +10,8 @@ ocr_controller = OCRController()
 
 # Telegram Bot Configuration
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-AUTHORIZED_CHATS = [-1002301798755]
+PHOTO_AUTHORIZED_CHATS = [-1002301798755]  # Group for photo processing
+TEXT_AUTHORIZED_CHATS = [-1002306963635]   # Replace with your text group ID
 SAVE_DIR = "public/uploads"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -18,10 +19,10 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 telegram_app = None
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle incoming photos in the group"""
+    """Handle incoming photos in the photo group"""
     chat_id = update.effective_chat.id
-    if chat_id not in AUTHORIZED_CHATS:
-        print(f"Unauthorized message from chat ID: {chat_id}")
+    if chat_id not in PHOTO_AUTHORIZED_CHATS:
+        print(f"Unauthorized photo message from chat ID: {chat_id}")
         return
 
     photo = update.message.photo[-1]
@@ -74,11 +75,59 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to save image: {str(e)}")
 
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle incoming text messages in the text group"""
+    chat_id = update.effective_chat.id
+    if chat_id not in TEXT_AUTHORIZED_CHATS:
+        print(f"Unauthorized text message from chat ID: {chat_id}")
+        return
+
+    message = update.message.text
+    message_id = update.message.message_id
+    user = update.message.from_user
+    user_full_name = f"{user.first_name} {user.last_name if user.last_name else ''}"
+    username = user.username if user.username else "No username"
+
+    message_info = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "username": username,
+        "user_full_name": user_full_name,
+        "user_id": user.id,
+        "message": message
+    }
+    html_prompt = "Based on this data, generate a html page for me to visualize it as a bar chart"
+
+    html_file_path, explanation = ocr_controller.retrive_and_generate_html_file(sql_prompt=message, html_prompt=html_prompt)
+    with open(html_file_path, "rb") as html_file:
+        await update.message.reply_document(document=html_file)
+    await update.message.reply_text(explanation)
+
+    try:
+        # Log the text message
+        log_entry = (
+            f"Text Message Details:\n"
+            f"- Message: {message}\n"
+            f"- Sent by: {user_full_name}\n"
+            f"- Username: @{username}\n"
+            f"- User ID: {user.id}\n"
+            f"- Chat ID: {chat_id}"
+        )
+
+        log_file_path = os.path.join(SAVE_DIR, "text_logs.txt")
+        with open(log_file_path, "a", encoding="utf-8") as log_file:
+            log_file.write(f"\n{log_entry}\n{'='*50}")
+
+    except Exception as e:
+        await update.message.reply_text(f"❌ Failed to process message: {str(e)}")
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""
     chat_id = update.effective_chat.id
-    if chat_id in AUTHORIZED_CHATS:
+    if chat_id in PHOTO_AUTHORIZED_CHATS:
         await update.message.reply_text('Bot is running! Send an image to save it.')
+    elif chat_id in TEXT_AUTHORIZED_CHATS:
+        await update.message.reply_text('Bot is running! Send a text message to save it.')
     else:
         await update.message.reply_text('This bot is not authorized for this chat.')
 
@@ -86,9 +135,21 @@ async def init_telegram_bot():
     """Initialize the telegram bot without running it"""
     global telegram_app
     telegram_app = Application.builder().token(TOKEN).build()
+    
+    # Add command handler
     telegram_app.add_handler(CommandHandler("start", start))
-    telegram_app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    print(f"Starting Telegram bot... Monitoring these chat IDs: {AUTHORIZED_CHATS}")
+    
+    # Add photo handler for photo group
+    photo_filter = filters.PHOTO & filters.Chat(chat_id=PHOTO_AUTHORIZED_CHATS)
+    telegram_app.add_handler(MessageHandler(photo_filter, handle_photo))
+    
+    # Add text handler for text group
+    text_filter = filters.TEXT & ~filters.COMMAND & filters.Chat(chat_id=TEXT_AUTHORIZED_CHATS)
+    telegram_app.add_handler(MessageHandler(text_filter, handle_text))
+    
+    print(f"Starting Telegram bot...")
+    print(f"Monitoring photo messages in these chats: {PHOTO_AUTHORIZED_CHATS}")
+    print(f"Monitoring text messages in these chats: {TEXT_AUTHORIZED_CHATS}")
     return telegram_app
 
 async def stop_telegram_bot():
@@ -96,17 +157,11 @@ async def stop_telegram_bot():
     global telegram_app
     if telegram_app:
         try:
-            # First stop the updater
             if telegram_app.updater and telegram_app.updater.running:
                 await telegram_app.updater.stop()
-            
-            # Then stop the application
             if telegram_app.running:
                 await telegram_app.stop()
-            
-            # Finally shutdown the application
             await telegram_app.shutdown()
-            
         except Exception as e:
             print(f"Error during bot shutdown: {e}")
 
@@ -114,5 +169,6 @@ def get_bot_status():
     """Get current bot status"""
     return {
         "bot_running": telegram_app is not None and telegram_app.is_running,
-        "monitored_chats": AUTHORIZED_CHATS
+        "photo_monitored_chats": PHOTO_AUTHORIZED_CHATS,
+        "text_monitored_chats": TEXT_AUTHORIZED_CHATS
     }

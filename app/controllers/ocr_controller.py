@@ -49,6 +49,6 @@ class OCRController:
             file_path = os.path.join(os.path.dirname(__file__), "..", "public", "reports", file_name)
             self.file_ops.save_html_to_file(html_file.html, file_path)
             
-            return "HTML file generated successfully"
+            return file_path, html_file.explanation
         except Exception as e:
             raise Exception(f"Error generating HTML file: {str(e)}")

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Numeric
+from sqlalchemy import Column, Integer, String, ForeignKey, Numeric, DateTime
 from sqlalchemy.orm import relationship
 from models.base_model import Base, BaseModel
 
@@ -10,7 +10,7 @@ class FuelTransaction(Base, BaseModel):
     vehicle_id = Column(Integer, ForeignKey("vehicle.vehicle_id"))
     driver_id = Column(Integer, ForeignKey("driver.driver_id"))
     product_id = Column(Integer, ForeignKey("product.product_id"))
-    transaction_date = Column(String, nullable=False, index=True)
+    transaction_date = Column(DateTime, nullable=False, index=True)
     quantity = Column(Numeric(10, 2), nullable=False)
     unit_price = Column(Numeric(10, 2), nullable=False)
     total_amount = Column(Numeric(10, 2), nullable=False)

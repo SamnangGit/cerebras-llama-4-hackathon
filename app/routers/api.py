@@ -26,7 +26,7 @@ async def ocr():
 async def get_html():
     try:
         ocr_controller = OCRController()
-        result = ocr_controller.retrive_and_generate_html_file(sql_prompt="I want to get the total amount of fuel based on vehicle plate number", html_prompt="Based on this data, generate a html page for me to visualize it as bar chart")
+        result = ocr_controller.retrive_and_generate_html_file(sql_prompt="I want to get the total quantity of fuel based on product type", html_prompt="Based on this data, generate a html page for me to visualize it as a bar chart")
         return {"html": result, "status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

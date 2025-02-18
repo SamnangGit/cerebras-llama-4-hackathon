@@ -27,8 +27,9 @@ class SQLAgent:
         try:
             llm = model.with_structured_output(SQLQuery)
             messages = generate_sql_query_prompt(prompt, schema)
-            print(type(messages))
-            response = llm.invoke([messages])
+            system_message = messages[0]
+            human_message = messages[1]
+            response = llm.invoke([system_message, human_message])
             return response
         except Exception as e:
             raise Exception(f"Error generating SQL query: {str(e)}")
