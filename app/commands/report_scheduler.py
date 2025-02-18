@@ -35,15 +35,15 @@ async def send_scheduled_report():
 
 def schedule_report_sender():
     scheduler = AsyncIOScheduler()
-    # scheduler.add_job(
-    #     send_scheduled_report,
-    #     'cron',
-    #     day_of_week='1',  # 0-6 or mon,tue,wed,thu,fri,sat,sun
-    #     hour=9,               # 24 hour format
-    #     minute=0              # Minute of the hour
-    # )
+    scheduler.add_job(
+        send_scheduled_report,
+        'cron',
+        day_of_week='1',  # 0-6 or mon,tue,wed,thu,fri,sat,sun
+        hour=9,               # 24 hour format
+        minute=0              # Minute of the hour
+    )
 
-    scheduler.add_job(send_scheduled_report, 'interval', minutes=1)
+    # scheduler.add_job(send_scheduled_report, 'interval', minutes=1)
     
     scheduler.start()
     print("Scheduler started. Weekly reports will be sent every Monday at 9:00 AM")

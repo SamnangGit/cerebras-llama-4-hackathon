@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from controllers.ocr_controller import OCRController
 
+
 load_dotenv()
 
 ocr_controller = OCRController()
@@ -161,7 +162,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def send_html_file(file_path: str, explanation: str):
     try:
         bot = Bot(token=TOKEN)
-        chat_id = PHOTO_AUTHORIZED_CHATS[0]
+        chat_id = TEXT_AUTHORIZED_CHATS[0]
         # Send the HTML file with increased timeout (e.g., 60 seconds)
         with open(file_path, "rb") as html_file:
             await bot.send_document(
@@ -242,3 +243,4 @@ def get_bot_status():
         "text_monitored_chats": TEXT_AUTHORIZED_CHATS,
         "file_monitored_chats": FILE_AUTHORIZED_CHATS
     }
+
