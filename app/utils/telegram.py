@@ -10,9 +10,9 @@ ocr_controller = OCRController()
 
 # Telegram Bot Configuration
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-PHOTO_AUTHORIZED_CHATS = [-1002301798755]  # Group for photo processing
-TEXT_AUTHORIZED_CHATS = [-1002306963635]   # Replace with your text group ID
-FILE_AUTHORIZED_CHATS = [1924007655]
+PHOTO_AUTHORIZED_CHATS = [int(os.getenv("CAR_GROUP_CHAT_ID"))]  # Group for photo processing
+TEXT_AUTHORIZED_CHATS = [int(os.getenv("ADMIN_GROUP_CHAT_ID"))]   # Replace with your text group ID
+FILE_AUTHORIZED_CHATS = [int(os.getenv("PERSONAL_CHAT_ID"))]
 IMG_DIR = "public/uploads/images"
 LOG_DIR = "public/uploads/logs"
 PROMPT_DIR = "public/uploads/prompts"
