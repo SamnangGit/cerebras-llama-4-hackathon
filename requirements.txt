@@ -16,4 +16,5 @@ langchain-google-genai==2.0.9
 langgraph==0.2.72
 
 python-telegram-bot==21.10
+APScheduler==3.11.0 
 

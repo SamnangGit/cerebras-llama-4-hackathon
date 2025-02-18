@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import os
 from dotenv import load_dotenv
@@ -120,6 +120,26 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to process message: {str(e)}")
+
+async def send_html_file(file_path: str, explanation: str):
+    try:
+        bot = Bot(token=TOKEN)
+        chat_id = PHOTO_AUTHORIZED_CHATS[0]
+        # Send the HTML file
+        with open(file_path, "rb") as html_file:
+            await bot.send_document(
+                chat_id=chat_id,
+                document=html_file,
+                filename=os.path.basename(file_path)
+            )
+        
+        # Send the explanation
+        await bot.send_message(
+            chat_id=chat_id,
+            text=explanation
+        )
+    except Exception as e:
+        print(f"Error sending file to Telegram: {str(e)}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""

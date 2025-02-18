@@ -8,10 +8,9 @@ from middlewares.api_logger import setup_logging_middleware
 from contextlib import asynccontextmanager
 import asyncio
 from utils.telegram import init_telegram_bot, stop_telegram_bot, get_bot_status
-
+from commands.report_scheduler import schedule_report_sender
 
 load_dotenv(override=True)
-
 
 async def start_bot():
     """Start the bot and begin polling"""
@@ -25,6 +24,11 @@ async def start_bot():
 async def lifespan(app: FastAPI):
     # Start the bot when the FastAPI app starts
     bot_task = asyncio.create_task(start_bot())
+    
+    # Start the scheduler
+    schedule_report_sender()
+    print("Scheduler started. Weekly reports will be sent every Monday at 9:00 AM")
+    
     try:
         yield
     finally:
@@ -33,13 +37,12 @@ async def lifespan(app: FastAPI):
             await stop_telegram_bot()
             if not bot_task.done():
                 bot_task.cancel()
-                try:
-                    await bot_task
-                except (asyncio.CancelledError, RuntimeError):
-                    pass
+            try:
+                await bot_task
+            except (asyncio.CancelledError, RuntimeError):
+                pass
         except Exception as e:
             print(f"Error during application shutdown: {e}")
-
 
 # FastAPI Application
 app = FastAPI(lifespan=lifespan)
