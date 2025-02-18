@@ -3,6 +3,7 @@ from agents.schemas.fuel_transaction import FuelTransactionBase
 from utils.db_ops import DBOps
 from agents.sql_agent import SQLAgent
 from agents.tools.file_ops import FileOps
+from models.analysis_history import AnalysisHistory
 import os
 
 class OCRController:
@@ -48,6 +49,14 @@ class OCRController:
             file_name = self.file_ops.date_time_now() + "_" + html_file.file_name
             file_path = os.path.join(os.path.dirname(__file__), "..", "public", "reports", file_name)
             self.file_ops.save_html_to_file(html_file.html, file_path)
+
+            analysis_history = AnalysisHistory(
+                prompt=sql_prompt,
+                file_path=file_path,
+                sql_statement=sql_query.query,
+                explanation=html_file.explanation
+            )
+            self.db_ops.save_analysis_history(analysis_history)
             
             return file_path, html_file.explanation
         except Exception as e:

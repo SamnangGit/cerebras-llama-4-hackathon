@@ -9,7 +9,7 @@ from models.station import Station
 from models.vehicle import Vehicle
 from models.driver import Driver
 from datetime import datetime
-
+from models.analysis_history import AnalysisHistory
 
 class DBOps:
     def __init__(self):
@@ -168,6 +168,24 @@ class DBOps:
                 db.rollback()
                 raise Exception(f"Failed to save transaction: {str(e)}")
             
+    def save_analysis_history(self, analysis_history: AnalysisHistory):
+        """Save analysis history to the database"""
+        engine, SessionLocal = self.get_db()
+        with SessionLocal() as db:
+            try:
+                analysis_history_model = AnalysisHistory(
+                    prompt=analysis_history.prompt,
+                    file_path=analysis_history.file_path,
+                    sql_statement=analysis_history.sql_statement,
+                    explanation=analysis_history.explanation
+                )
+                db.add(analysis_history_model)
+                db.commit()
+                db.refresh(analysis_history_model)
+                return analysis_history_model
+            except Exception as e:
+                db.rollback()
+                raise Exception(f"Failed to save analysis history: {str(e)}")
 
     def convert_date_string(self, date_str: str) -> datetime:
         try:

@@ -9,8 +9,13 @@ from contextlib import asynccontextmanager
 import asyncio
 from utils.telegram import init_telegram_bot, stop_telegram_bot, get_bot_status
 from commands.report_scheduler import schedule_report_sender
+# from utils.db_ops import DBOps
+
 
 load_dotenv(override=True)
+
+# db_ops = DBOps()
+# db_ops.init_db()
 
 async def start_bot():
     """Start the bot and begin polling"""
