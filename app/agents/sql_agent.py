@@ -3,7 +3,7 @@ from agents.schemas.sql_query import SQLQuery
 from agents.schemas.html_text import HTMLText
 from agents.model import GenerativeModel
 import base64
-from agents.prompt_templates import generate_html_text_promp, generate_sql_query_prompt, get_text_from_image_prompt
+from agents.prompt_templates import generate_html_text_prompt, generate_sql_query_prompt, get_text_from_image_prompt
 
 class SQLAgent:
     def __init__(self):
@@ -39,7 +39,7 @@ class SQLAgent:
     def generate_html_text(self, prompt: str, data: str, model: GenerativeModel) -> HTMLText:
         try:
             llm = model.with_structured_output(HTMLText)
-            messages = generate_html_text_promp(prompt, data)
+            messages = generate_html_text_prompt(prompt, data)
             system_message = messages[0]
             human_message = messages[1]
             response = llm.invoke([system_message, human_message])

@@ -41,7 +41,10 @@ class OCRController:
             schema = self.db_ops.get_schema_info()
             
             sql_query = self.sql_agent.generate_sql_query(schema, sql_prompt, self.model)
-
+            # if html_prompt does not contain chart type, add it
+            if "chart" not in html_prompt:
+                html_prompt = f" Visualize the data as {html_prompt} {sql_query.chart_type} chart"  
+            print(html_prompt)
             result = self.db_ops.execute_sql_query(sql_query.query)
             
             html_file = self.sql_agent.generate_html_text(html_prompt, result, self.model)

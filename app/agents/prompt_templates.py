@@ -40,7 +40,7 @@ def generate_sql_query_prompt(prompt: str, schema: str):
     return [system_message, human_message]  
 
 
-def generate_html_text_promp(prompt: str, data: str):
+def generate_html_text_prompt(prompt: str, data: str):
     human_message = HumanMessage(
                 content=[
                     {
@@ -59,7 +59,10 @@ def generate_html_text_promp(prompt: str, data: str):
         4. Pointing out potential business implications
         5. Make sure the explanation is not too long and not too short
         6. Make sure the explanation is in bullet points
+        7. If user does not mention about chart type, give a suitable chart type that is best fit for the data.
+        Important:
         Avoid discussing technical implementation details like responsiveness or design elements.
+        Avoid Overrided user requested chart type.
         """
     )
     return [system_message, human_message]

@@ -102,7 +102,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "user_id": user.id,
         "message": message
     }
-    html_prompt = "Based on this data, generate a html page for me to visualize it as a bar chart"
+    html_prompt = "Based on this data, generate a html page for me to visualize it."
 
     html_file_path, explanation = ocr_controller.retrive_and_generate_html_file(sql_prompt=message, html_prompt=html_prompt)
     with open(html_file_path, "rb") as html_file:

@@ -1,0 +1,43 @@
+services:
+  receipt-data-analysis:
+    build:
+      context: .
+      dockerfile: fastapi.dockerfile
+    env_file:
+      - .env
+    ports:
+      - "7001:7001"
+    volumes:
+      - ./public/uploads/prompts:/app/app/public/uploads/prompts
+      - ./public/uploads/images:/app/app/public/uploads/images
+      - ./public/uploads/logs:/app/app/public/uploads/logs
+      - ./public/reports:/app/app/public/reports  
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    depends_on:
+      - db
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  db:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=FuelTransactionDB
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_HOST=0.0.0.0
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    command: postgres -c 'listen_addresses=*'
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
