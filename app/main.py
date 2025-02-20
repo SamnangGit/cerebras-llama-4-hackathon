@@ -32,7 +32,6 @@ async def lifespan(app: FastAPI):
     
     # Start the scheduler
     schedule_report_sender()
-    print("Scheduler started. Weekly reports will be sent every Monday at 9:00 AM")
     
     try:
         yield
@@ -64,4 +63,4 @@ if __name__ == "__main__":
     if os.getenv("APP_ENV") == "local":
         uvicorn.run(app, host="127.0.0.1", port=8000)
     else:
-        uvicorn.run(app, host="0.0.0.0", port=7000)
+        uvicorn.run(app, host="0.0.0.0", port=7001)
