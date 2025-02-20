@@ -6,9 +6,9 @@ from agents.tools.file_ops import FileOps
 from models.analysis_history import AnalysisHistory
 import os
 
-class OCRController:
+class AnalysisController:
     def __init__(self, model_name: str = "gemini-2.0-flash"):
-        """Initialize OCR controller with specified model."""
+        """Initialize Analysis controller with specified model."""
         generative_model = GenerativeModel()
         self.model = generative_model.get_model(model_name)
         self.db_ops = DBOps()
