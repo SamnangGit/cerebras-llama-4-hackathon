@@ -1,0 +1,60 @@
+// Jenkinsfile
+pipeline {
+    agent any
+    environment {
+        DOCKER_CREDENTIALS = credentials('docker-credentials')
+    }
+    stages {
+        stage('Setup Environment') {
+            steps {
+                cleanWs()
+                checkout scm
+                sh 'chmod +x ./scripts/ci/*.sh'
+                sh './scripts/ci/setup_env.sh'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh './scripts/ci/run_test.sh'
+            }
+        }
+        stage('Build and Push Docker Image') {
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'docker-credentials',
+                        usernameVariable: 'DOCKER_CREDENTIALS_USR',
+                        passwordVariable: 'DOCKER_CREDENTIALS_PSW')
+                ]) {
+                    sh './scripts/ci/docker_login.sh'
+                    sh './scripts/ci/build_image.sh'
+                    sh './scripts/ci/push_image.sh'
+                }
+            }
+        }
+        stage('Deploy to Test Server') {
+            steps {
+                sshagent(['ssh-credentials']) {
+                    withCredentials([
+                        string(credentialsId: 'ssh-host', variable: 'SSH_HOST'),
+                        string(credentialsId: 'ssh-port', variable: 'SSH_PORT'),
+                        usernamePassword(credentialsId: 'docker-credentials',
+                            usernameVariable: 'DOCKER_CREDENTIALS_USR',
+                            passwordVariable: 'DOCKER_CREDENTIALS_PSW')
+                    ]) {
+                        sh './scripts/ci/remote_docker_login.sh'
+                        sh './scripts/ci/deploy_container.sh'
+                        sh './scripts/ci/save_version.sh'
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo "Successfully deployed"
+        }
+    }
+}

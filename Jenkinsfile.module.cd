@@ -1,0 +1,57 @@
+// Jenkinsfile.prod
+pipeline {
+    agent any
+    environment {
+        DOCKER_CREDENTIALS = credentials('docker-credentials')
+        IMAGE_NAME = 'gtea.sinet.com.kh/sinet/receipt-data-analysis'
+    }
+    stages {
+        stage('Setup') {
+            steps {
+                cleanWs()
+                checkout scm
+                sh 'chmod +x ./scripts/cd/*.sh'
+            }
+        }
+        stage('Get Build Version') {
+            steps {
+                script {
+                    sh './scripts/cd/get_version.sh'
+                    env.BUILD_VERSION = sh(
+                        script: 'cat .build_version',
+                        returnStdout: true
+                    ).trim()
+                    sh './scripts/cd/echo_version.sh'
+                }
+            }
+        }
+        stage('Deploy to Production') {
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'docker-credentials',
+                        usernameVariable: 'DOCKER_CREDENTIALS_USR',
+                        passwordVariable: 'DOCKER_CREDENTIALS_PSW')
+                ]) {
+                    sh './scripts/cd/docker_login.sh'
+                }
+                
+                sshagent(['ssh-credentials']) {
+                    withCredentials([
+                        string(credentialsId: 'ssh-host-prod', variable: 'SSH_HOST'),
+                        string(credentialsId: 'ssh-port', variable: 'SSH_PORT'),
+                        usernamePassword(credentialsId: 'docker-credentials',
+                            usernameVariable: 'DOCKER_CREDENTIALS_USR',
+                            passwordVariable: 'DOCKER_CREDENTIALS_PSW')
+                    ]) {
+                        sh './scripts/cd/prod_deploy.sh'
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
