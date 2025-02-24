@@ -27,6 +27,10 @@ class ReportScheduler:
                 sql_prompt=sql_prompt,
                 html_prompt=html_prompt
             )
+
+            if html_file_path == "RESTRICTED":
+                print(explanation)
+                return
             
             await self.telegram_bot.send_html_file(
                 file_path=html_file_path,

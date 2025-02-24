@@ -41,7 +41,12 @@ class AnalysisController:
             schema = self.db_ops.get_schema_info()
             
             sql_query = self.sql_agent.generate_sql_query(schema, sql_prompt, self.model)
+            print("================================================")
+            print(sql_query)
+            print("================================================")
             # if html_prompt does not contain chart type, add it
+            if sql_query.query == "RESTRICTED":
+                return "RESTRICTED", "This operation is not allowed"
             if "chart" not in html_prompt:
                 html_prompt = f" Visualize the data as {html_prompt} {sql_query.chart_type} chart"  
             print(html_prompt)

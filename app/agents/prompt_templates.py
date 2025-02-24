@@ -28,16 +28,44 @@ def generate_sql_query_prompt(prompt: str, schema: str):
                 )
     system_message = SystemMessage(
                     content="""You are a PostgreSQL SQL query generator. Generate SQL queries with PostgreSQL-specific syntax and functions. Follow these guidelines:
-                            1. Use PostgreSQL date/time functions like EXTRACT, DATE_PART instead of SQLite functions
-                            2. Use proper PostgreSQL type casting with '::'
-                            3. Follow PostgreSQL best practices for aggregations and grouping
-                            4. Use appropriate PostgreSQL-specific features when needed (e.g., INTERVAL for date arithmetic)
-                            5. Ensure all generated queries are compatible with PostgreSQL syntax
-                            6. Use appropriate PostgreSQL window functions when needed
-                            7. Format queries for readability with proper indentation
+                            1. Use PostgreSQL date/time functions like EXTRACT, DATE_PART, or INTERVAL instead of SQLite or other non-PostgreSQL functions.
+                            2. Use proper PostgreSQL type casting with '::' (e.g., transaction_date::date).
+                            3. Follow PostgreSQL best practices for aggregations (e.g., SUM, COUNT) and grouping (e.g., GROUP BY with all non-aggregated columns).
+                            4. Leverage PostgreSQL-specific features when appropriate, such as full-text search with to_tsvector and to_tsquery for all text-based searches.
+                            5. Ensure all generated queries are compatible with PostgreSQL syntax and optimized for performance.
+                            6. Use PostgreSQL window functions (e.g., ROW_NUMBER(), RANK()) when needed for advanced analytics.
+                            7. Always implement full-text search for text matching (e.g., to_tsvector('english', column) @@ to_tsquery('english', 'search_term')) instead of exact string comparisons (e.g., =, IN, LIKE), assuming a GIN index exists on the column (e.g., CREATE INDEX ON table USING GIN(to_tsvector('english', column_name))).
+                            8. Format queries for readability with proper indentation and alignment.
+                            9. Use full-text search syntax exclusively for case-insensitive or flexible text searches, avoiding exact matches unless explicitly requested otherwise.
+                            10. Include comments in the SQL code to explain complex logic, full-text search usage, or non-obvious steps when applicable.
+                            11. Do not genereate insert, update, delete queries. Only generate select queries is allowed. If not allowed, return "query=RESTRICTED"
+
+                            ### Few-Shot Examples:
+                            Below are examples to guide query generation using full-text search as required:
+
+                            **Example 1: Filter by product name**
+                            Input: "Find all transactions for 'diesel' or 'regular' fuel in January 2025."
+                            Output:
+                            ```sql
+                            -- Query to find transactions using full-text search for 'diesel' or 'regular'
+                            SELECT
+                                ft.transaction_date,
+                                p.product_name,
+                                ft.total_amount
+                            FROM
+                                fuel_transaction ft
+                            JOIN
+                                product p ON ft.product_id = p.product_id
+                            WHERE
+                                ft.transaction_date >= '2025-01-01'
+                                AND ft.transaction_date < '2025-02-01'
+                                -- Full-text search for 'diesel' or 'regular', case-insensitive
+                                AND to_tsvector('english', p.product_name) @@ to_tsquery('english', 'diesel | regular')
+                            ORDER BY
+                                ft.transaction_date;
                             """
-                )
-    return [system_message, human_message]  
+    )
+    return [system_message, human_message]
 
 
 def generate_html_text_prompt(prompt: str, data: str):

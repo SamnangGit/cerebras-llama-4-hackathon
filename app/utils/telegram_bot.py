@@ -122,6 +122,10 @@ class TelegramBot:
                 sql_prompt=message, 
                 html_prompt=html_prompt
             )
+            print(html_file_path)
+            if html_file_path == "RESTRICTED":
+                await update.message.reply_text(explanation)
+                return
             
             with open(html_file_path, "rb") as html_file:
                 await update.message.reply_document(document=html_file)
