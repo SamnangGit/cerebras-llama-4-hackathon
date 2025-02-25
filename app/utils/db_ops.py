@@ -45,7 +45,7 @@ class DBOps:
         """
         Get detailed schema information including tables, columns, and their properties
         """
-        engine, _ = self.init_db()
+        engine, _ = self.get_db()
         inspector = inspect(engine)
         schema_info = {}
         
@@ -79,7 +79,7 @@ class DBOps:
         Execute a raw SQL query and return the result as a list of dictionaries
         """
         try:
-            engine, _ = self.init_db()
+            engine, _ = self.get_db()
             with engine.connect() as connection:
                 print(sql_query)
                 result = connection.execute(text(sql_query))
@@ -97,17 +97,23 @@ class DBOps:
         """
         Verify that tables were created in the database
         """
-        engine, _ = self.init_db()
+        engine, _ = self.get_db()
         existing_tables = Base.metadata.tables.keys()
         print("Created tables:", existing_tables)
         return existing_tables
     
-    def get_or_create_record(self, db, model, **kwargs):
-        """Helper method to get existing record or create new one"""
+    def get_or_create_record(self, db, model, unique_fields, **kwargs):
+        """
+        Helper method to get existing record or create new one
+        unique_fields: dict of field names and values to check for existing records
+        """
         try:
-            instance = db.query(model).filter_by(**kwargs).first()
+            # Check for existing record using unique fields
+            instance = db.query(model).filter_by(**unique_fields).first()
             if instance:
                 return instance
+                
+            # If no existing record, create new one with all fields
             instance = model(**kwargs)
             db.add(instance)
             db.flush()
@@ -118,6 +124,13 @@ class DBOps:
     def save_fuel_transaction(self, fuel_transaction, driver_name):
         """Save fuel transaction with related records to the database"""
         engine, SessionLocal = self.get_db()
+        last_record_ids = self.get_last_record_ids()
+        last_product_id = last_record_ids["last_product_id"]
+        last_station_id = last_record_ids["last_station_id"]
+        last_vehicle_id = last_record_ids["last_vehicle_id"] 
+        last_driver_id = last_record_ids["last_driver_id"]
+        last_transaction_id = last_record_ids["last_fuel_transaction_id"]
+
         print(driver_name)
         
         with SessionLocal() as db:
@@ -126,26 +139,38 @@ class DBOps:
                 product = self.get_or_create_record(
                     db,
                     Product,
+                    unique_fields={"product_name": fuel_transaction.product_name},
+                    product_id=last_product_id + 1,
                     product_name=fuel_transaction.product_name
                 )
+                
                 station = self.get_or_create_record(
                     db,
                     Station,
+                    unique_fields={"station_name": fuel_transaction.station_name},
+                    station_id=last_station_id + 1,
                     station_name=fuel_transaction.station_name
                 )
+                
                 vehicle = self.get_or_create_record(
                     db,
                     Vehicle,
+                    unique_fields={"plate_number": fuel_transaction.plate_number},
+                    vehicle_id=last_vehicle_id + 1,
                     plate_number=fuel_transaction.plate_number
                 )
+                
                 driver = self.get_or_create_record(
                     db,
                     Driver,
+                    unique_fields={"driver_name": driver_name},
+                    driver_id=last_driver_id + 1,
                     driver_name=driver_name
                 )
-                
+
                 # Create fuel transaction with the obtained IDs
                 fuel_transaction_model = FuelTransaction(
+                    transaction_id=last_transaction_id + 1,
                     product_id=product.product_id,
                     station_id=station.station_id,
                     vehicle_id=vehicle.vehicle_id,
@@ -167,13 +192,14 @@ class DBOps:
             except Exception as e:
                 db.rollback()
                 raise Exception(f"Failed to save transaction: {str(e)}")
-            
+                
     def save_analysis_history(self, analysis_history: AnalysisHistory):
         """Save analysis history to the database"""
         engine, SessionLocal = self.get_db()
         with SessionLocal() as db:
             try:
                 analysis_history_model = AnalysisHistory(
+                    analysis_id=analysis_history.analysis_id,
                     prompt=analysis_history.prompt,
                     file_path=analysis_history.file_path,
                     sql_statement=analysis_history.sql_statement,
@@ -193,3 +219,22 @@ class DBOps:
             return parsed_date.replace(microsecond=419502)
         except ValueError as e:
             raise ValueError(f"Invalid date string format. Expected DD/MM/YYYY HH:mm, got: {date_str}") from e
+        
+    def get_last_record_ids(self) -> dict[str, int]:
+        """Get the last record ids"""
+        engine, SessionLocal = self.get_db()
+        with SessionLocal() as db:
+            last_analysis = db.query(AnalysisHistory).order_by(AnalysisHistory.analysis_id.desc()).first()
+            last_fuel_transaction = db.query(FuelTransaction).order_by(FuelTransaction.transaction_id.desc()).first()
+            last_product = db.query(Product).order_by(Product.product_id.desc()).first()
+            last_station = db.query(Station).order_by(Station.station_id.desc()).first()
+            last_vehicle = db.query(Vehicle).order_by(Vehicle.vehicle_id.desc()).first()
+            last_driver = db.query(Driver).order_by(Driver.driver_id.desc()).first()
+            return {
+                "last_analysis_id": last_analysis.analysis_id if last_analysis else 0,
+                "last_fuel_transaction_id": last_fuel_transaction.transaction_id if last_fuel_transaction else 0,
+                "last_product_id": last_product.product_id if last_product else 0,
+                "last_station_id": last_station.station_id if last_station else 0,
+                "last_vehicle_id": last_vehicle.vehicle_id if last_vehicle else 0,
+                "last_driver_id": last_driver.driver_id if last_driver else 0
+            }

@@ -3,6 +3,7 @@ from agents.schemas.sql_query import SQLQuery
 from agents.schemas.html_text import HTMLText
 from agents.model import GenerativeModel
 import base64
+from datetime import datetime
 from agents.prompt_templates import generate_html_text_prompt, generate_sql_query_prompt, get_text_from_image_prompt
 
 class SQLAgent:
@@ -25,10 +26,12 @@ class SQLAgent:
 
     def generate_sql_query(self, schema: str, prompt: str, model: GenerativeModel) -> str:
         try:
+            current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             llm = model.with_structured_output(SQLQuery)
-            messages = generate_sql_query_prompt(prompt, schema)
+            messages = generate_sql_query_prompt(prompt, schema, current_date_time)
             system_message = messages[0]
             human_message = messages[1]
+            print(human_message)
             response = llm.invoke([system_message, human_message])
             return response
         except Exception as e:

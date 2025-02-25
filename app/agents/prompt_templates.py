@@ -1,6 +1,5 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 
-
 # Prompt get get text from image
 def get_text_from_image_prompt(prompt: str, image_data: str):
     message = HumanMessage(
@@ -17,12 +16,12 @@ def get_text_from_image_prompt(prompt: str, image_data: str):
             )
     return message
 
-def generate_sql_query_prompt(prompt: str, schema: str):
+def generate_sql_query_prompt(prompt: str, schema: str, current_date_time: str):
     human_message = HumanMessage(
                     content=[
                         {
                             "type": "text",
-                            "text": prompt + "\n\n" + "Here is the schema of the database:" + str(schema)
+                            "text": prompt + "\n\n" + "Here is the schema of the database:" + str(schema) + "\n\n" + "The current date and time is: " + current_date_time
                         }
                     ]
                 )
