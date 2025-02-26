@@ -16,7 +16,33 @@ def get_text_from_image_prompt(prompt: str, image_data: str):
             )
     return message
 
-def generate_sql_query_prompt(prompt: str, schema: str, current_date_time: str):
+def generate_mysql_query_prompt(prompt: str, schema: str, current_date_time: str):
+    human_message = HumanMessage(
+                    content=[
+                        {
+                            "type": "text",
+                            "text": prompt + "\n\n" + "Here is the schema of the database:" + str(schema) + "\n\n" + "The current date and time is: " + current_date_time
+                        }
+                    ]
+                )
+    system_message = SystemMessage(
+                    content="""You are a MYSQL SQL query generator. Generate SQL queries with MYSQL-specific syntax and functions. Follow these guidelines:
+                            1. Use MYSQL date/time functions like EXTRACT, DATE_PART, or INTERVAL instead of SQLite or other non-MYSQL functions.
+                            2. Use proper MYSQL type casting with '::' (e.g., transaction_date::date).
+                            3. Follow MYSQL best practices for aggregations (e.g., SUM, COUNT) and grouping (e.g., GROUP BY with all non-aggregated columns).
+                            4. Leverage MYSQL-specific features when appropriate, such as full-text search with to_tsvector and to_tsquery for all text-based searches.
+                            5. Ensure all generated queries are compatible with MYSQL syntax and optimized for performance.
+                            6. Use MYSQL window functions (e.g., ROW_NUMBER(), RANK()) when needed for advanced analytics.
+                            7. Always implement full-text search for text matching (e.g., to_tsvector('english', column) @@ to_tsquery('english', 'search_term')) instead of exact string comparisons (e.g., =, IN, LIKE), assuming a GIN index exists on the column (e.g., CREATE INDEX ON table USING GIN(to_tsvector('english', column_name))).
+                            8. Format queries for readability with proper indentation and alignment.
+                            9. Use full-text search syntax exclusively for case-insensitive or flexible text searches, avoiding exact matches unless explicitly requested otherwise.
+                            10. Include comments in the SQL code to explain complex logic, full-text search usage, or non-obvious steps when applicable.
+                            11. Do not genereate insert, update, delete queries. Only generate select queries is allowed. If not allowed, return "query=RESTRICTED"
+                            """
+    )
+    return [system_message, human_message]
+
+def generate_psql_query_prompt(prompt: str, schema: str, current_date_time: str):
     human_message = HumanMessage(
                     content=[
                         {

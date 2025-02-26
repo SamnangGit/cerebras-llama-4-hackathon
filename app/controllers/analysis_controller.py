@@ -38,8 +38,15 @@ class AnalysisController:
     def retrive_and_generate_html_file(self, sql_prompt: str, html_prompt: str) -> str:
         """Generate HTML file based on SQL query results"""
         try:
-            schema = self.db_ops.get_schema_info()
-            
+            relationship_tables = self.db_ops.get_relationship_tables('table_relationships')
+            if relationship_tables["status"] == False:
+                schema = self.db_ops.get_schema_info()
+            else:
+                table_names = self.sql_agent.get_main_table_from_prompt(sql_prompt, relationship_tables["data"], self.model)
+                schema = self.db_ops.get_table_schemas_by_names(table_names)
+                few_shot_examples = self.db_ops.get_last_n_records(table_names, n=2)
+                print(table_names)
+                sql_prompt = sql_prompt + "\n\n" + "Here are some examples of how to query the data:" + str(few_shot_examples)
             sql_query = self.sql_agent.generate_sql_query(schema, sql_prompt, self.model)
             print("================================================")
             print(sql_query)
@@ -69,3 +76,4 @@ class AnalysisController:
             return file_path, html_file.explanation
         except Exception as e:
             raise Exception(f"Error generating HTML file: {str(e)}")
+        

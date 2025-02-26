@@ -198,8 +198,9 @@ class DBOps:
         engine, SessionLocal = self.get_db()
         with SessionLocal() as db:
             try:
+                last_analysis_id = self.get_last_record_ids()["last_analysis_id"]
                 analysis_history_model = AnalysisHistory(
-                    analysis_id=analysis_history.analysis_id,
+                    analysis_id=last_analysis_id + 1,
                     prompt=analysis_history.prompt,
                     file_path=analysis_history.file_path,
                     sql_statement=analysis_history.sql_statement,
@@ -238,3 +239,114 @@ class DBOps:
                 "last_vehicle_id": last_vehicle.vehicle_id if last_vehicle else 0,
                 "last_driver_id": last_driver.driver_id if last_driver else 0
             }
+        
+
+    def get_relationship_tables(self, table_name):
+        engine, SessionLocal = self.get_db()  
+        inspector = inspect(engine)
+        
+        # Verify the table exists
+        if table_name not in inspector.get_table_names():
+            return {
+                "error": f"Table '{table_name}' does not exist",
+                "status": False
+            }
+        
+        try:
+            # Get all columns for this table
+            columns = [col['name'] for col in inspector.get_columns(table_name)]
+            
+            # Build query
+            select_columns = ", ".join(columns)
+            query = f"SELECT {select_columns} FROM {table_name}"
+            
+            # Create a session from the sessionmaker
+            with SessionLocal() as session:
+                # Execute with session
+                result = session.execute(text(query))
+                
+                # Process the results
+                table_data = {col: [] for col in columns}
+                for row in result:
+                    for i, col in enumerate(columns):
+                        table_data[col].append(row[i])
+                
+                return {
+                    "data": table_data,
+                    "status": True
+                }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "status": False
+            }
+        
+
+    def get_table_schemas_by_names(self, table_names):
+        engine, _ = self.get_db()
+        inspector = inspect(engine)
+        schema_info = {}
+        
+        for table_name in table_names:
+            # Verify the table exists
+            if table_name not in inspector.get_table_names():
+                schema_info[table_name] = {"error": f"Table '{table_name}' does not exist"}
+                continue
+                
+            try:
+                # Get column information with cleaned output
+                columns = []
+                for column in inspector.get_columns(table_name):
+                    # Only include name and type in the column info
+                    column_info = {
+                        'name': column['name'],
+                        'type': str(column['type'])
+                    }
+                    columns.append(column_info)
+                
+                # Get primary key information
+                pk = inspector.get_pk_constraint(table_name)
+                
+                # Get foreign key information
+                foreign_keys = inspector.get_foreign_keys(table_name)
+                
+                # Store all information for this table
+                schema_info[table_name] = {
+                    'columns': columns,
+                    'primary_key': pk['constrained_columns'],
+                    'foreign_keys': foreign_keys
+                }
+            except Exception as e:
+                schema_info[table_name] = {"error": str(e)}
+        
+        return schema_info
+    
+    def get_last_n_records(self, table_names, n=3):
+        engine, SessionLocal = self.get_db()
+        results = {}
+        
+        with SessionLocal() as db:
+            for table_name in table_names:
+                # Direct query without table name validation
+                query = text(f"SELECT * FROM {table_name} ORDER BY id DESC LIMIT {n}")
+                result = db.execute(query)
+                
+                # Convert SQLAlchemy result objects to dictionaries
+                rows = []
+                for row in result.fetchall():
+                    # Handle Row objects by converting to dict
+                    if hasattr(row, '_mapping'):
+                        # For SQLAlchemy 1.4+ Row objects
+                        rows.append(dict(row._mapping))
+                    elif hasattr(row, '_asdict'):
+                        # For SQLAlchemy 1.3 RowProxy objects
+                        rows.append(row._asdict())
+                    else:
+                        # Handle tuples (depends on your schema)
+                        column_names = result.keys()
+                        row_dict = {column_names[i]: value for i, value in enumerate(row)}
+                        rows.append(row_dict)
+                
+                results[table_name] = rows
+        
+        return results
