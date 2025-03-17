@@ -1,7 +1,7 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 from agents.schemas.sql_query import SQLQuery
 from agents.schemas.html_text import HTMLText
-from app.agents.schemas.sematic_table import SemanticTable
+from agents.schemas.sematic_table import SemanticTable
 from agents.model import GenerativeModel
 import base64
 from datetime import datetime
@@ -47,6 +47,8 @@ class SQLAgent:
             messages = generate_html_text_prompt(prompt, data)
             system_message = messages[0]
             human_message = messages[1]
+            # print(human_message)
+            # print(system_message)
             response = llm.invoke([system_message, human_message])
             return response
         except Exception as e:
