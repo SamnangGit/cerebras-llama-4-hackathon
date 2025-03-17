@@ -40,9 +40,9 @@ class ApplicationManager:
         print("Bot polling started...")
         
         # Initialize and start the scheduler
-        self.report_scheduler = ReportScheduler(self.telegram_bot)
-        self.report_scheduler.start_scheduler()
-        print("Scheduler started...")
+        # self.report_scheduler = ReportScheduler(self.telegram_bot)
+        # self.report_scheduler.start_scheduler()
+        # print("Scheduler started...")
         
         try:
             yield
