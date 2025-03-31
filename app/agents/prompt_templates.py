@@ -2,7 +2,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 # Prompt get get text from image
 def get_text_from_image_prompt(prompt: str, image_data: str):
-    message = HumanMessage(
+    human_message = HumanMessage(
                 content=[
                     {
                         "type": "text",
@@ -13,8 +13,17 @@ def get_text_from_image_prompt(prompt: str, image_data: str):
                         "image_url": f"data:image/jpeg;base64,{image_data}"
                     }
                 ]
+                
             )
-    return message
+    system_message = SystemMessage(
+        content="""
+        Make sure that the extracted text from the receipt image is correct.
+        You should focus on the data type of the schema and make note that:
+        - transaction_date field is timestamp
+        - consumption_rate is numeric
+        """
+    )
+    return [system_message, human_message]
 
 def generate_mysql_query_prompt(prompt: str, schema: str, current_date_time: str):
     human_message = HumanMessage(

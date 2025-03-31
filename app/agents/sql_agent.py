@@ -17,8 +17,10 @@ class SQLAgent:
             with open(image_path, "rb") as image_file:
                 image_data = base64.b64encode(image_file.read()).decode("utf-8")
             messages = get_text_from_image_prompt(prompt, image_data)
+            system_message = messages[0]
+            human_message = messages[1]
             llm = model.with_structured_output(schema)
-            response = llm.invoke([messages])
+            response = llm.invoke([system_message, human_message])
             return response
 
         except Exception as e:
