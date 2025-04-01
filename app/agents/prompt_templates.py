@@ -19,7 +19,7 @@ def get_text_from_image_prompt(prompt: str, image_data: str):
         content="""
         Make sure that the extracted text from the receipt image is correct.
         You should focus on the data type of the schema and make note that:
-        - transaction_date field is timestamp
+        - transaction_date field is timestamp in this format: DD/MM/YYYY HH:mm
         - consumption_rate is numeric
         """
     )
