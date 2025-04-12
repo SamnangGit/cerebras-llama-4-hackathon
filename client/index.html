@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>SQL Analysis Chatbot</title>
+      <link rel="stylesheet" href="style.css">
+   </head>
+   <body>
+      <div class="main-container">
+         <!-- Left side: Chat interface -->
+         <div class="chat-container">
+            <div class="header">
+               <h1>SQL Analysis Assistant</h1>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+               <div class="message system">
+                  <div class="message-content">
+                     Welcome! I can help you analyze your data. Enter an SQL query prompt and select a chart type to begin.
+                  </div>
+               </div>
+            </div>
+            <div class="input-container">
+               <div class="form-group">
+                  <input type="text" id="sql-prompt" placeholder="Enter your SQL query prompt..." value="Give me top 3 transaction">
+               </div>
+               <div class="form-group select-wrapper">
+                  <select id="chart-type">
+                     <option value="bar">Bar Chart</option>
+                     <option value="line">Line Chart</option>
+                     <option value="pie">Pie Chart</option>
+                     <option value="scatter">Scatter Plot</option>
+                     <option value="table">Table</option>
+                  </select>
+               </div>
+               <button id="submit-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                     <line x1="22" y1="2" x2="11" y2="13"></line>
+                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+               </button>
+            </div>
+         </div>
+         <!-- Right side: Artifact display window -->
+         <div class="artifact-container" id="artifact-container">
+            <div class="artifact-header">
+               <h2>Chart Visualization</h2>
+               <div class="artifact-header-buttons">
+                  <button id="resize-artifact" class="resize-btn">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+                     </svg>
+                  </button>
+                  <button id="close-artifact" class="close-btn">×</button>
+               </div>
+            </div>
+            <div class="artifact-placeholder" id="artifact-placeholder">
+               <div class="artifact-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                     <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                     <polyline points="13 2 13 9 20 9"></polyline>
+                  </svg>
+               </div>
+               <p>Your chart visualization will appear here</p>
+            </div>
+            <div class="artifact-content hidden" id="artifact-content">
+               <iframe id="artifact-frame" frameborder="0"></iframe>
+            </div>
+            <div class="response-section" id="response-container">
+               <div class="loader hidden" id="loader"></div>
+               <div class="response-data hidden" id="response-data">
+                  <div class="response-card">
+                     <div id="status-container">
+                        <strong>Status:</strong> <span id="status"></span>
+                     </div>
+                     <div id="file-container">
+                        <strong>File:</strong> <span id="file-path" class="file-link"></span>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <script src="app.js"></script>
+   </body>
+</html>
