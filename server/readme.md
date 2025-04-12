@@ -83,6 +83,5 @@ Key directories:
 - `app/utils`: Utility functions
 - `app/public`: Generated reports and uploads
 
-## License
 
-[Your License Information]
+

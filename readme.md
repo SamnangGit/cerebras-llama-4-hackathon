@@ -107,6 +107,3 @@ Key directories:
 - `server/app/public`: Generated reports and uploads
 - `client`: Web interface for SQL analysis
 
-## License
-
-[Your License Information]
