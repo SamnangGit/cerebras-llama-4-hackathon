@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 
 class SQLQuery(BaseModel):
     query: str = Field(description="The SQL query to be executed")
-    explanation: str = Field(description="The explanation of the SQL query")
-    chart_type: str = Field(description="The type of chart to be used")
+    explanation: str = Optional  [str] 
+    chart_type: str = Optional [str] 

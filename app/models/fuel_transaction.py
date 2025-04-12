@@ -6,6 +6,7 @@ class FuelTransaction(Base, BaseModel):
     __tablename__ = "fuel_transaction"
 
     transaction_id = Column(Integer, primary_key=True, autoincrement=True)
+    ticket_uid = Column(String, nullable=False)
     station_id = Column(Integer, ForeignKey("station.station_id"))
     vehicle_id = Column(Integer, ForeignKey("vehicle.vehicle_id"))
     driver_id = Column(Integer, ForeignKey("driver.driver_id"))

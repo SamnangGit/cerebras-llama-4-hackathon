@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional
 class FuelTransactionBase(BaseModel):
     """Base Pydantic model for fuel transaction data"""
+    ticket_no: str = Field(..., description="Ticket number of the transaction")
     transaction_date: str = Field(..., description="Date and time of the transaction")
     quantity: Decimal = Field(..., ge=0, description="Quantity of fuel dispensed")
     unit_price: Decimal = Field(..., ge=0, description="Price per unit of fuel")
